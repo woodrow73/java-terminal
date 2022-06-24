@@ -23,12 +23,9 @@ import javax.swing.text.Caret;
 import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.MutableAttributeSet;
 
-import java.util.ArrayList;
-
-import java.awt.font.LineBreakMeasurer;
-
 public class ConsoleDocument extends DefaultStyledDocument implements CaretListener
 {
+
 	private Caret caret;
 	
 	private static final long serialVersionUID = -1270788544217141905L;
@@ -36,15 +33,9 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
 	private Console console = null;
 
 	private int limit;
-
-	private boolean doFocus = true;
 	
 	public void setConsole(Console console) {
         this.console = console;
-    }
-    
-    public void setFocusAfterAppend(boolean var) {
-        doFocus = var;
     }
 	
     public void write(String text, MutableAttributeSet attrs)
@@ -59,11 +50,6 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
         {
             e.printStackTrace();
         }
-
-        if (doFocus)
-        {
-        	console.focus();
-		}
     }
     
 	public void writeUser(String text, MutableAttributeSet attrs)
@@ -77,7 +63,6 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
 		{
 			e.printStackTrace();
 		}
-        if (doFocus) console.focus();
 	}
 	
 	public String getUserInput()

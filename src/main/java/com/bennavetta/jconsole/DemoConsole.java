@@ -21,62 +21,70 @@
  */
 package com.bennavetta.jconsole;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
+import com.formdev.flatlaf.FlatDarculaLaf;
+
+import java.awt.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
+import javax.swing.*;
 
 public class DemoConsole
 {
-	private static final String CONSOLE_NAME = "Console Demo";      // This is your console's name, and will
-                                                                    // show up in the upper lefthand corner of
-                                                                    // the window.
+
+	private static final String CONSOLE_NAME = "Console Demo";  // JFrame's Title
+
+    private static final int FONT_SIZE = 14;
+    private static Dimension consoleSize = new Dimension(670, 435);
     
-    private static final String ICON_IMAGE_FILE = "SomeImage.png";  // The filepath to the icon for the window goes here.
+    private static final String ICON_IMAGE_FILE = "/icon.png";  // Resource path to the console's icon
     
     private static final Color BACKGROUND_COLOR = Color.BLACK;      // The background color
     private static final Color FOREGROUND_COLOR = Color.GREEN;      // The text color
 	
-	private static final Map<String, InputProcessor> commandMap = new HashMap<String, InputProcessor>(10); // A hashmap to store commands and triggers.
-    
-    
-	/**
-	 * @param args
-	 */
+	private static final Map<String, InputProcessor> commandMap = new HashMap<>(10); // A hashmap to store commands and triggers.
+
+
 	public static void main(String[] args)
 	{
+        // Apply a dark theme to the UI using flatlaf
+        customizeLaf();
         
     //STEP 1: Initialize and define all commands, in the form of InputProcessors.
         
         InputProcessor clearScreen = new InputProcessor() {
-            public void process(String[] args, Console console) {
+            public void process(String raw, String[] args, Console console) {
                 console.cls();
             }
         };
         
         InputProcessor terminateProgram = new InputProcessor() {
-            public void process(String[] args, Console console) {
+            public void process(String raw, String[] args, Console console) {
                 System.exit(0);
             }
         };
         
         InputProcessor echo = new InputProcessor() {
-            public void process(String[] args, Console console) {
-                console.write(args[1]); // only echos the first word...
+            public void process(String raw, String[] args, Console console) {
+                if (args.length <= 1)
+                    console.write("Usage: echo <text>");
+                else {
+                    console.write(raw.substring(raw.indexOf(' ') + 1));
+                }
             }
         };
-        
+
+        InputProcessor help = new InputProcessor() {
+            public void process(String raw, String[] args, Console console) {
+                console.write("Commands:  help | echo <text> | cls | close | exit");
+            }
+        };
+
         InputProcessor IDontUnderstand = new InputProcessor() {
-            public void process(String[] args, Console console) {
-                console.write("Sorry, I don't understand that command");
+            public void process(String raw, String[] args, Console console) {
+                console.write("Command not recognized. Use \"help\" to list commands.");
             }
         };
         
@@ -90,27 +98,26 @@ public class DemoConsole
         
         commandMap.put("echo",echo);                //String command COULD be the same as the variable name, if you want.
         
-        commandMap.put("help",IDontUnderstand);
+        commandMap.put("help",help);
     // STEP 3: Initialize the JFrame:
         
 		JFrame frame = new JFrame(CONSOLE_NAME);
-        try {frame.setIconImage(ImageIO.read(new File(ICON_IMAGE_FILE)));} catch (IOException e) {}
+        try {frame.setIconImage(new ImageIcon(ImageIO.read(DemoConsole.class.getResource(ICON_IMAGE_FILE))).getImage());}
+        catch (Exception e) { e.printStackTrace(); }
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(677, 343);                    // Official Windows Command Prompt size, looks beautiful and can be resized
-                                                    // after being opened if you so desire.
-		
+
         //Init console
-		Console console = new Console(Color.BLACK, Color.GREEN, 
-				new Font(Font.MONOSPACED, Font.BOLD, 14), "$ ");
-		console.setPreferredSize(new Dimension(677, 343)); // Same as above
-		
-		console.setCompletionSource(new DefaultCompletionSource("help", "echo", "cls", "close","exit")); // String commands go here as well.
+		Console console = new Console(BACKGROUND_COLOR, FOREGROUND_COLOR,
+				new Font(Font.MONOSPACED, Font.BOLD, FONT_SIZE), "Demo Console> ");
+
+        // String commands go here as well.
+		console.setCompletionSource(new DefaultCompletionSource("help", "echo", "cls", "close", "exit"));
 		
         console.setProcessor(new InputProcessor() { // This processor breaks a statement into args and passes them to the matching
                                                     // command defined in the hashmap above (the part in step 2)
 			private int requests = 0;
             
-            public void process(String[] args, Console console)
+            public void process(String raw, String[] args, Console console)
             {
                 //1. Print for debugging:
                 System.out.println("Got Req. " + ++requests + ": '" + args[0] + "'");
@@ -118,20 +125,35 @@ public class DemoConsole
                 System.out.println("asked: " + Arrays.toString(args));
                 //4. Process list of arguments
                 if (args.length > 0 && commandMap.containsKey(args[0].toLowerCase()))
-                    commandMap.get(args[0].toLowerCase()).process(args, console);
+                    commandMap.get(args[0].toLowerCase()).process(raw, args, console);
                 else
-                    commandMap.get("help").process(args, console);
+                    IDontUnderstand.process(raw, args, console);
             }
 		});
+
 		frame.add(console);
         frame.addComponentListener(console);
-		frame.pack();
+        frame.setSize(consoleSize);
         console.setScreenHeight((int) frame.getContentPane().getSize().getHeight());
+        frame.setLocation(new Point(30, 30));
 		frame.setVisible(true);
 	}
-    
-    public static String removeQuotes(String arg) { //Param: a quote.
-        return arg.substring(1,arg.length()-1);
+
+    private static void customizeLaf() {
+        try {
+            UIManager.setLookAndFeel(new FlatDarculaLaf() {
+                //removing the content of this method because it was responsible for producing an annoying beep sound
+                @Override
+                public void provideErrorFeedback(Component component) {}
+            });
+        } catch (UnsupportedLookAndFeelException e) {
+            System.err.println("Could not set up Look and Feel");
+            e.printStackTrace();
+        }
+
+        UIManager.put("ScrollBar.showButtons", true);
+        UIManager.put("ScrollBar.width", 12);
+        UIManager.put("defaultFont", new Font(Font.MONOSPACED, Font.PLAIN, FONT_SIZE));
     }
 
 }

@@ -24,40 +24,41 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-//import java.awt.Component;
-
-public class Console extends JTextPane implements KeyListener, MouseWheelListener, ComponentListener, MouseListener
+public class Console extends JScrollPane implements KeyListener, MouseWheelListener, ComponentListener, MouseListener
 {	
 	private static final long serialVersionUID = -5260432287332359321L;
+
+    private JTextPane textPane;
 	
 	private ConsoleDocument doc;		// Holder of all text on the window
 	
 	private int maxLinesPerScreen = 17; 	// This is default based on default window size.
-	
-	private String prompt;			// Structured as such: [connection][subprompt][prompt]
-	private String subPrompt = "";		// Subprompt: one character at the end of the prompt
-    	public String connection = "Home>";	// Computer name, IP, or Domain name (for use with networking)
-    	private String path = "C:\\";		// Current Directory
+
+    private String prompt;			    // Structured as such: [connection][subprompt][prompt]
+    private String subPrompt = "";		// Subprompt: one character at the end of the prompt
+    public String connection = "Home>";	// Computer name, IP, or Domain name (for use with networking)
+    private String path = "C:\\";		// Current Directory
 	
 	private final Font f;			// Keeps track of the current font for line counting.
 	
-    	private boolean wasInFocus = true;	// Used to focus the screen when typing/scrolling.
+    private boolean wasInFocus = true;	// Used to focus the screen when typing/scrolling.
 	
 	private ArrayList<String> prompts = new ArrayList<String>();                // List of previously run commands
    	private ArrayList<String> DOCUMENT_HARDCOPY = new ArrayList<String>();      // List of all lines since last cls.
-    	private String currentCommand = "";                                         // The current command being written, constantly being updated
-    	private int currentPosition = 0;                                            // The line, as referenced in "DOCUMENT_HARDCOPY" that is at the top of the window
-    	private int currentCommandnum = 0;                                          // The current command number, as referenced in "prompts," that the user is 
-										    //  accessing, based on arrow keys.
+    private String currentCommand = "";                                    // The current command being written, constantly being updated
+    private int currentPosition = 0;                                       // The line, as referenced in "DOCUMENT_HARDCOPY" that is at the top of the window
+    private int currentCommandnum = 0;                                     // The current command number, as referenced in "prompts," that the user is
+                                                                           //  accessing, based on arrow keys.
 	
-	private InputProcessor processor = new NoOpInputProcessor();		    // Processor of input, as name implies.
+	private InputProcessor processor = new NoOpInputProcessor();		   // Processor of input, as name implies.
 	
 	private CompletionSource completionSource = new NoOpCompletionSource();
 	
 	private MutableAttributeSet defaultStyle;
+
+
 
     /**
      * Sets the maximum number of lines that can fit on a window of the specified height.
@@ -69,37 +70,10 @@ public class Console extends JTextPane implements KeyListener, MouseWheelListene
      * @param  heightInPixels   The height of the window, in pixels
      */
     public void setScreenHeight(int heightInPixels) { //in pixels
-        FontMetrics fm = this.getFontMetrics(f);
+        FontMetrics fm = textPane.getFontMetrics(f);
         int height = fm.getMaxDescent(); //haha, getMaxDecent works too, but was quickly depricated!
         height += fm.getMaxAscent();
         maxLinesPerScreen = heightInPixels / height;
-    }
-
-    /**
-     * Performs the smallest necessary amount of scrolling to move the "true cursor," or
-     * current line being edited, onto the user's screen. Should be called anytime user
-     * attempts to append the document, so they can see what they're doing.
-     *
-     * @author Joey Patel
-     * @author pateljo@northvilleschools.net (valid until 06/18)
-     */
-    public void focus() {
-        //1. Is it already in focus?
-        int MinimumFocusablePosition = DOCUMENT_HARDCOPY.size() - maxLinesPerScreen;
-        int MaximumFocusablePosition = DOCUMENT_HARDCOPY.size() - 1;
-        
-        if ((MinimumFocusablePosition <= currentPosition)&&(currentPosition <= MaximumFocusablePosition))
-            return;
-        
-        //2. Otherwise, set current position to a focusable location
-        int scrollDistance = 0;
-        if (MinimumFocusablePosition > currentPosition) {
-            scrollDistance = MinimumFocusablePosition - currentPosition;
-        } else if (MaximumFocusablePosition < currentPosition) {
-            scrollDistance = MaximumFocusablePosition - currentPosition;
-        }
-        scroll(scrollDistance);
-        wasInFocus = true;
     }
     
     /**
@@ -120,43 +94,12 @@ public class Console extends JTextPane implements KeyListener, MouseWheelListene
      * Scrolls the document by a specified number of lines, in a direction specified by 
      * positive/negative integer value. 
      *
-     * @author Joey Patel
-     * @author pateljo@northvilleschools.net (valid until 06/18)
      * @param  distance the number of lines to scroll
      */
     public void scroll(int distance) {
-        currentPosition+=distance;
-        if (isInFocus(currentPosition))
-            currentCommand = doc.getUserInput();
-        if (currentPosition < 0) currentPosition = 0;
-        while (DOCUMENT_HARDCOPY.contains(""))
-            DOCUMENT_HARDCOPY.remove("");
-        if (DOCUMENT_HARDCOPY.size() < 1 || DOCUMENT_HARDCOPY.get(DOCUMENT_HARDCOPY.size()-1).endsWith("\n")) {
-            DOCUMENT_HARDCOPY.add(currentCommand);
-        } else {
-            DOCUMENT_HARDCOPY.set(DOCUMENT_HARDCOPY.size()-1,currentCommand);
-        }
-
-        doc = new ConsoleDocument();
-        doc.setConsole(this);
-        setDocument(doc);
-        doc.setCaret(getCaret());
-        
-        doc.setFocusAfterAppend(false);
-        for (int i = 0; i + currentPosition < DOCUMENT_HARDCOPY.size(); i++) {
-            if (DOCUMENT_HARDCOPY.get(currentPosition + i).endsWith("\n"))
-                this.write(DOCUMENT_HARDCOPY.get(currentPosition + i));
-            else {
-                this.write(prompt);
-                doc.writeUser(DOCUMENT_HARDCOPY.get(currentPosition + i),defaultStyle);
-            }
-                
-        }
-        doc.setFocusAfterAppend(true);
+        getViewport().setViewPosition(new Point(0, getViewport().getViewPosition().y + distance * f.getSize()));
     }
-    
-    
-    
+
 	public CompletionSource getCompletionSource() {
 		return completionSource;
 	}
@@ -167,15 +110,24 @@ public class Console extends JTextPane implements KeyListener, MouseWheelListene
 
 	
     /**
+     * Sets the console's prompt, overwriting the connection, path, and sub-prompt.
+     *
+     * @param  prompt to become the new prompt
+     */
+    public void setPrompt(String prompt) {
+        this.prompt = prompt;
+    }
+
+    /**
      * Sets the one-character subprompt of the console's prompting system, then updates the
      * entire prompt.
      *
      * @author Joey Patel
      * @author pateljo@northvilleschools.net (valid until 06/18)
-     * @param  prompt to become the new prompt
+     * @param  subPrompt to become the new sub-prompt
      */
-    public void setPrompt(String prompt) {
-        this.subPrompt = prompt;
+    public void setSubPrompt(String subPrompt) {
+        this.subPrompt = subPrompt;
         this.prompt = this.connection + this.path + this.subPrompt;
     }
     
@@ -211,41 +163,47 @@ public class Console extends JTextPane implements KeyListener, MouseWheelListene
 		this.processor = processor;
 	}
 
-	 public Console() { f = null; } //for debugging only
-
 	public Console(Color background, Color text, Font font, String prompt)
 	{
 	    super();
+        textPane = new JTextPane();
+
+        setBorder(BorderFactory.createEmptyBorder());
+
+        setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        //setPreferredSize(consoleSize);
+        setViewportView(textPane);
+
         doc = new ConsoleDocument();
         doc.setConsole(this);
-        setDocument(doc);
-        
+        textPane.setDocument(doc);
         
         DOCUMENT_HARDCOPY.add("");
         
-        setBackground(background);
-        
-        setCaretColor(text);
-        addCaretListener(doc);
-        doc.setCaret(getCaret());
+        textPane.setBackground(background);
+
+        textPane.setCaretColor(text);
+        textPane.addCaretListener(doc);
+        doc.setCaret(textPane.getCaret());
         
         f = font;
-        MutableAttributeSet attrs = getInputAttributes();
+        MutableAttributeSet attrs = textPane.getInputAttributes();
         StyleConstants.setFontFamily(attrs, font.getFamily());
         StyleConstants.setFontSize(attrs, font.getSize());
         StyleConstants.setItalic(attrs, (font.getStyle() & Font.ITALIC) != 0);
         StyleConstants.setBold(attrs, (font.getStyle() & Font.BOLD) != 0);
         StyleConstants.setForeground(attrs, text);
-        getStyledDocument().setCharacterAttributes(0, doc.getLength() + 1, attrs, false);
+        textPane.getStyledDocument().setCharacterAttributes(0, doc.getLength() + 1, attrs, false);
         defaultStyle = attrs;
         
         
-        this.prompt = this.connection + this.path + prompt;
+        //this.prompt = this.connection + this.path + prompt;
+        this.prompt = prompt;
         doc.write(this.prompt, defaultStyle);
         
-        addKeyListener(this); //catch tabs, enters, and up/down arrows for autocomplete and input processing
-        addMouseWheelListener(this);
-        addMouseListener(this);
+        textPane.addKeyListener(this); //catch tabs, enters, and up/down arrows for autocomplete and input processing
+        textPane.addMouseWheelListener(this);
+        textPane.addMouseListener(this);
 	}
 	
     /**
@@ -258,23 +216,38 @@ public class Console extends JTextPane implements KeyListener, MouseWheelListene
     public void cls() {
         doc = new ConsoleDocument();
         doc.setConsole(this);
-        setDocument(doc);
-        doc.setCaret(getCaret());
+        textPane.setDocument(doc);
+        doc.setCaret(textPane.getCaret());
         DOCUMENT_HARDCOPY = new ArrayList<String>();
         DOCUMENT_HARDCOPY.add("");
         currentPosition = 0;
     }
-    
+
+    /** Writes text to the console with an added newline.
+     *  Use write(String text, boolean newline) to write without a newline.
+     *
+     * @param text to write
+     */
 	public void write(String text)
 	{
-		doc.write(text, defaultStyle);
+		doc.write(text + "\n", defaultStyle);
 	}
+
+    /** Writes text to the console.
+     *
+     * @param text to write
+     * @param newline whether to add a newline
+     */
+    public void write(String text, boolean newline)
+    {
+        doc.write(text + (newline ? "\n" : ""), defaultStyle);
+    }
 	
 	public void remove(int offset, int length)
 	{
 		try
 		{
-			getStyledDocument().remove(offset, length);
+            textPane.getStyledDocument().remove(offset, length);
 		}
 		catch (BadLocationException e)
 		{
@@ -302,9 +275,6 @@ public class Console extends JTextPane implements KeyListener, MouseWheelListene
 		// Is the cursor in a valid position?
         if (!doc.isCursorValid())
             doc.makeCursorValid();
-            
-        // Is the screen focused on the proper line?
-        focus();
             
         //TAB -> AUTOCOMPLETE
         if(e.getKeyCode() == KeyEvent.VK_TAB)
@@ -418,7 +388,7 @@ public class Console extends JTextPane implements KeyListener, MouseWheelListene
 
 	public void keyReleased(KeyEvent e)
 	{
-		if(e.getKeyCode() == KeyEvent.VK_ENTER)
+        if(e.getKeyCode() == KeyEvent.VK_ENTER )
         {
             DOCUMENT_HARDCOPY.set(DOCUMENT_HARDCOPY.size()-1,prompt + doc.getUserInput());
             if (!DOCUMENT_HARDCOPY.get(DOCUMENT_HARDCOPY.size()-1).endsWith("\n"))
@@ -428,7 +398,7 @@ public class Console extends JTextPane implements KeyListener, MouseWheelListene
             String[] args = parseLine(line);
             prompts.add(line);
             currentCommandnum = prompts.size();
-            processor.process(args, this);
+            processor.process(line, args, this);
             doc.write(prompt, defaultStyle);
         }
 	}
@@ -453,8 +423,8 @@ public class Console extends JTextPane implements KeyListener, MouseWheelListene
     String mostRecentSelectedText = "";
     
     public void mouseReleased(MouseEvent e) {
-        if (this.getSelectedText() != null) // See if they selected something 
-            mostRecentSelectedText = this.getSelectedText();
+        if (textPane.getSelectedText() != null) // See if they selected something
+            mostRecentSelectedText = textPane.getSelectedText();
         else
             mostRecentSelectedText = "";
         if (e.isPopupTrigger())
@@ -524,7 +494,7 @@ public class Console extends JTextPane implements KeyListener, MouseWheelListene
     
 	private static class NoOpInputProcessor implements InputProcessor
 	{
-		public void process(String[] text, Console console) {}
+		public void process(String raw, String[] text, Console console) {}
 	}
 	
 	private static class NoOpCompletionSource implements CompletionSource

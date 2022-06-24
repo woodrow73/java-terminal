@@ -1,6 +1,12 @@
-This is a Java terminal emulator. It uses Swing, so it should run on all platforms. For a usage demo, see the DemoConsole class.
+This is a Java terminal emulator using Swing- for a usage demo, see the DemoConsole class.
+
+![console](console.png)
 
 *Using the terminal:*
 
-Type text into the prompt like any other terminal. Use the arrow keys to move within the current line, and the backspace key to delete text. You can copy/paste text into the terminal.
-Press tab for autocomplete. You cannot edit previously entered lines or text output by the console (i.e. a prompt).
+Use the up & down arrow keys to cycle through previous commands. You can copy/paste text into the terminal.
+Press tab for autocomplete. You cannot edit previously entered lines or text output from the console (i.e. the prompt).
+
+*Dependencies:*
+[Flatlaf 2.3](https://github.com/JFormDesigner/FlatLaf)
+
