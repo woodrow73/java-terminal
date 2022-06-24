@@ -1,4 +1,4 @@
-This is a Java terminal emulator using Swing- for a usage demo, see the DemoConsole class.
+A Java terminal emulator using Swing; for a usage demo, see the DemoConsole class.
 
 ![console](console.png)
 
@@ -7,6 +7,7 @@ This is a Java terminal emulator using Swing- for a usage demo, see the DemoCons
 Use the up & down arrow keys to cycle through previous commands. You can copy/paste text into the terminal.
 Press tab for autocomplete. You cannot edit previously entered lines or text output from the console (i.e. the prompt).
 
-*Dependencies:*
+*Dependency:*
+
 [Flatlaf 2.3](https://github.com/JFormDesigner/FlatLaf)
 
