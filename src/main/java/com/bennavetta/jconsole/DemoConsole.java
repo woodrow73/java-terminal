@@ -36,6 +36,12 @@ public class DemoConsole
 
 	private static final String CONSOLE_NAME = "Console Demo";  // JFrame's Title
 
+    /** Whether the console should enable ANSI colors */
+    private static final boolean ENABLE_ANSI = true;
+
+    /** Whether the text color in the console should be reset to DemoConsole.FOREGROUND_COLOR after each message */
+    private static final boolean RESET_COLOR_AFTER_EACH_MSG = true;
+
     private static final int FONT_SIZE = 14;
     private static Dimension consoleSize = new Dimension(670, 435);
     
@@ -71,14 +77,22 @@ public class DemoConsole
                 if (args.length <= 1)
                     console.write("Usage: echo <text>");
                 else {
-                    console.write(raw.substring(raw.indexOf(' ') + 1));
+                    console.write(raw.substring(raw.indexOf(' ') + 1), ColorUtil.getContrastingColor(BACKGROUND_COLOR),true);
                 }
             }
         };
 
         InputProcessor help = new InputProcessor() {
             public void process(String raw, String[] args, Console console) {
-                console.write("Commands:  help | echo <text> | cls | close | exit");
+                console.write(String.format("Commands:%n  %-22sEchoes back text in color%n  %-22sClear screen%n  "
+                        + "%-22sPrint an ASCII castle%n  %-22sExit program%n  %-22sList commands",
+                        "echo <text>", "cls", "castle", "exit", "help"));
+            }
+        };
+
+        InputProcessor castle = new InputProcessor() {
+            public void process(String raw, String[] args, Console console) {
+                console.write(ColorUtil.getCastle(), true);
             }
         };
 
@@ -92,11 +106,11 @@ public class DemoConsole
         
         commandMap.put("cls",clearScreen);          //String command does not need to match variable name from above
         
-        commandMap.put("close",terminateProgram);
         commandMap.put("exit",terminateProgram);    //Multiple strings can be used for the same command, but multiple 
                                                     //commands may not be referenced by the same string.
         
         commandMap.put("echo",echo);                //String command COULD be the same as the variable name, if you want.
+        commandMap.put("castle",castle);
         
         commandMap.put("help",help);
     // STEP 3: Initialize the JFrame:
@@ -107,11 +121,11 @@ public class DemoConsole
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         //Init console
-		Console console = new Console(BACKGROUND_COLOR, FOREGROUND_COLOR,
-				new Font(Font.MONOSPACED, Font.BOLD, FONT_SIZE), "Demo Console> ");
+		Console console = new Console(BACKGROUND_COLOR, FOREGROUND_COLOR, new Font(Font.MONOSPACED, Font.BOLD, FONT_SIZE),
+                "Demo Console> ", ENABLE_ANSI, RESET_COLOR_AFTER_EACH_MSG);
 
         // String commands go here as well.
-		console.setCompletionSource(new DefaultCompletionSource("help", "echo", "cls", "close", "exit"));
+		console.setCompletionSource(new DefaultCompletionSource(commandMap.keySet().stream().sorted().toArray(String[]::new)));
 		
         console.setProcessor(new InputProcessor() { // This processor breaks a statement into args and passes them to the matching
                                                     // command defined in the hashmap above (the part in step 2)
