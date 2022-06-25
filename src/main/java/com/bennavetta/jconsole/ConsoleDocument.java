@@ -18,10 +18,8 @@ package com.bennavetta.jconsole;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Caret;
-import javax.swing.text.DefaultStyledDocument;
-import javax.swing.text.MutableAttributeSet;
+import javax.swing.text.*;
+import java.awt.*;
 
 public class ConsoleDocument extends DefaultStyledDocument implements CaretListener
 {
@@ -30,36 +28,67 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
 	
 	private static final long serialVersionUID = -1270788544217141905L;
 
-	private Console console = null;
+	private Console console;
+	private ColorPane textPane;
 
 	private int limit;
 	
 	public void setConsole(Console console) {
         this.console = console;
     }
+
+	public ConsoleDocument(Console console, ColorPane textPane) {
+		this.console = console;
+		this.textPane = textPane;
+	}
 	
-    public void write(String text, MutableAttributeSet attrs)
+    public void write(String text, MutableAttributeSet attrs, boolean updateLimit)
     {
         try
         {
-            insertString(getLength(), text, attrs);
-            limit = getLength();
-            caret.setDot(limit);
+			if(console.enableANSI) {
+				textPane.appendANSI(text, attrs);
+				if(console.resetColorAfterEachMsg) {
+					StyleConstants.setForeground(attrs, console.FOREGROUND);
+				}
+			}
+			else {
+				insertString(getLength(), text, attrs);
+			}
+
+			if(updateLimit) {
+				limit = getLength();
+				caret.setDot(limit);
+			}
+			else {
+				caret.setDot(getLength());
+			}
         }
         catch(BadLocationException e)
         {
             e.printStackTrace();
         }
     }
-    
-	public void writeUser(String text, MutableAttributeSet attrs)
+
+	public void write(String text, MutableAttributeSet attrs, Color color, boolean updateLimit)
 	{
 		try
 		{
+			StyleConstants.setForeground(attrs, color);
 			insertString(getLength(), text, attrs);
-			caret.setDot(getLength());
+			if(updateLimit) {
+				limit = getLength();
+				caret.setDot(limit);
+			}
+			else {
+				caret.setDot(getLength());
+			}
+
+			if(console.resetColorAfterEachMsg) {
+				StyleConstants.setForeground(attrs, console.FOREGROUND);
+			}
 		}
-		catch(BadLocationException e)
+		catch(Exception e)
 		{
 			e.printStackTrace();
 		}
