@@ -33,8 +33,8 @@ import java.util.Map;
 public class DemoConsole
 {
 
-	public static void main(String[] args)
-	{
+    public static void main(String[] args)
+    {
         // Set the look and feel to FlatDarculaLaf
         FlatLafWrapper.customizeLaf();
 
@@ -59,7 +59,7 @@ public class DemoConsole
                 new Font(Font.MONOSPACED, Font.BOLD, 14), "Demo Console> ", true, true, true);
 
         frame.setTitle("Demo Console");
-		frame.setVisible(true);
-	}
+        frame.setVisible(true);
+    }
 
 }
