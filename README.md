@@ -1,4 +1,4 @@
-A Java terminal emulator using Swing; for a usage demo, see the DemoConsole class.
+A Java terminal emulator using Swing; for a usage demo, see the [DemoConsole](https://github.com/woodrow73/java-terminal/blob/demo/src/main/java/com/bennavetta/jconsole/DemoConsole.java) class.
 
 ![console](console.png)
 
