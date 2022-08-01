@@ -21,8 +21,7 @@ import javax.swing.event.CaretListener;
 import javax.swing.text.*;
 import java.awt.*;
 
-public class ConsoleDocument extends DefaultStyledDocument implements CaretListener
-{
+public class ConsoleDocument extends DefaultStyledDocument implements CaretListener {
 
 	private Caret caret;
 	
@@ -42,10 +41,8 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
 		this.textPane = textPane;
 	}
 	
-    public void write(String text, MutableAttributeSet attrs, boolean updateLimit)
-    {
-        try
-        {
+    public void write(String text, MutableAttributeSet attrs, boolean updateLimit) {
+        try {
 			if(console.enableANSI) {
 				textPane.appendANSI(text, attrs);
 				if(console.resetColorAfterEachMsg) {
@@ -64,16 +61,13 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
 				caret.setDot(getLength());
 			}
         }
-        catch(BadLocationException e)
-        {
+        catch(BadLocationException e) {
             e.printStackTrace();
         }
     }
 
-	public void write(String text, MutableAttributeSet attrs, Color color, boolean updateLimit)
-	{
-		try
-		{
+	public void write(String text, MutableAttributeSet attrs, Color color, boolean updateLimit) {
+		try {
 			StyleConstants.setForeground(attrs, color);
 			insertString(getLength(), text, attrs);
 			if(updateLimit) {
@@ -88,31 +82,24 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
 				StyleConstants.setForeground(attrs, console.FOREGROUND);
 			}
 		}
-		catch(Exception e)
-		{
+		catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public String getUserInput()
-	{
-		try
-		{
+	public String getUserInput() {
+		try {
 			return getText(limit, getLength() - limit);
 		}
-		catch (BadLocationException e)
-		{
+		catch (BadLocationException e) {
 			e.printStackTrace();
 			return null;
 		}
-        
 	}
 	
 	@Override
-	public void remove(int offs, int len) throws BadLocationException
-	{
-		if(offs < limit)
-		{
+	public void remove(int offs, int len) throws BadLocationException {
+		if(offs < limit) {
 			return;
 		}
 		super.remove(offs, len);
@@ -133,9 +120,7 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
     
     public void makeCursorValid() {
         if(caret.getDot() < limit)
-         {
              caret.setDot(limit);
-         }
     }
     
     public void caretUpdate(CaretEvent e) {} // Moved to "MakeCursorValid" so that the user can still copy text

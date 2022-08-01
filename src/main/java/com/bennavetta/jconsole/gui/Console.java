@@ -31,8 +31,7 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Console extends JScrollPane implements KeyListener, MouseWheelListener, ComponentListener, MouseListener
-{	
+public class Console extends JScrollPane implements KeyListener, MouseWheelListener, ComponentListener, MouseListener {
 	private static final long serialVersionUID = -5260432287332359321L;
 
     /** Whether ANSI colors should be enabled */
@@ -186,8 +185,7 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
      * @param resetColorAfterEachMsg whether the console's text color should be reset after each message
      */
 	public Console(Color background, Color foreground, Font font, String prompt, boolean enableANSI,
-                   boolean resetColorAfterEachMsg)
-	{
+                   boolean resetColorAfterEachMsg) {
 	    super();
         textPane = new ColorPane(this, foreground);
         this.enableANSI = enableANSI;
@@ -285,8 +283,7 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
      * @param color what color to make the text
      * @param newline whether to add a newline
      */
-    public void write(String text, Color color, boolean newline)
-    {
+    public void write(String text, Color color, boolean newline) {
         doc.write(text + (newline ? "\n" : ""), defaultStyle, color, true);
     }
 
@@ -295,10 +292,8 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
      * @param text to write
      * @param newline whether to add a newline
      */
-    public void writeRainbowWords(String text, boolean newline)
-    {
-        for(int i = 0, wordCount = 0; i < text.length(); i++)
-        {
+    public void writeRainbowWords(String text, boolean newline) {
+        for(int i = 0, wordCount = 0; i < text.length(); i++) {
             if(text.charAt(i) == ' ') {
                 int nextNonSpace = i + Util.indexOfRegex("\\S", text.substring(i));
                 if(nextNonSpace == -1) {
@@ -327,8 +322,7 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
      * @param text to write
      * @param newline whether to add a newline
      */
-    public void writeRainbowCharacters(String text, boolean newline)
-    {
+    public void writeRainbowCharacters(String text, boolean newline) {
         for(int i = 0, nonSpaceCount = 0; i < text.length(); i++) {
             if(text.charAt(i) != ' ') {
                 doc.write(text.substring(i, i + 1), defaultStyle, ColorUtil.getCloseColor(
@@ -344,15 +338,10 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
             doc.write("\n", defaultStyle, true);
     }
 	
-	public void remove(int offset, int length)
-	{
-		try
-		{
+	public void remove(int offset, int length) {
+		try {
             textPane.getStyledDocument().remove(offset, length);
-		}
-		catch (BadLocationException e)
-		{
-			// TODO Auto-generated catch block
+		} catch (BadLocationException e) {
 			e.printStackTrace();
 		}
 	}
@@ -362,46 +351,38 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
 		return this.doc;
 	}
 
-	public void keyTyped(KeyEvent e)
-	{
-		if(e.getKeyChar() == '\t')
-		{
+	public void keyTyped(KeyEvent e) {
+		if(e.getKeyChar() == '\t') {
 			//don't append autocomplete tabs to the document
 			e.consume();
 		}
 	}
 
-	public void keyPressed(KeyEvent e)
-	{
+	public void keyPressed(KeyEvent e) {
 		// Is the cursor in a valid position?
         if (!doc.isCursorValid())
             doc.makeCursorValid();
             
         //TAB -> AUTOCOMPLETE
-        if(e.getKeyCode() == KeyEvent.VK_TAB)
-        {
+        if(e.getKeyCode() == KeyEvent.VK_TAB) {
             e.consume();
             String input = doc.getUserInput().trim();
             
             List<String> completions = completionSource.complete(input);
-            if(completions == null || completions.isEmpty())
-            {
+            if(completions == null || completions.isEmpty()) {
                 //no completions
                 Toolkit.getDefaultToolkit().beep();
             }
-            else if(completions.size() == 1) //only one match - print it
-            {
+            else if(completions.size() == 1) { //only one match - print it
                 String toInsert = completions.get(0);
                 toInsert = toInsert.substring(input.length());
                 doc.write(toInsert, defaultStyle, false);
                 //don't trigger processing because the user might not agree with the autocomplete
             }
-            else
-            {
+            else {
                 StringBuilder help = new StringBuilder();
                 help.append('\n');
-                for(String str : completions)
-                {
+                for(String str : completions) {
                     help.append(' ');
                     help.append(str);
                 }
@@ -412,8 +393,7 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
         }
         
         //UP ARROW -> FILL IN A PREV COMMAND
-        if (e.getKeyCode() == KeyEvent.VK_UP)
-        {
+        if (e.getKeyCode() == KeyEvent.VK_UP) {
             e.consume(); //Don't actually go up a row
             
             //Get current input
@@ -478,19 +458,16 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
             }
             
             //If, for some reason, the list is not in range (lower bound), make it in range.
-            if (currentCommandnum < 0) {
+            if (currentCommandnum < 0)
                 currentCommandnum = 0;
-            }
             
             //finally, write in the new command.
             doc.write(prompts.get(currentCommandnum), defaultStyle, false);
         }
 	}
 
-	public void keyReleased(KeyEvent e)
-	{
-        if(e.getKeyCode() == KeyEvent.VK_ENTER)
-        {
+	public void keyReleased(KeyEvent e) {
+        if(e.getKeyCode() == KeyEvent.VK_ENTER) {
             DOCUMENT_HARDCOPY.set(DOCUMENT_HARDCOPY.size()-1,prompt + doc.getUserInput());
             if (!DOCUMENT_HARDCOPY.get(DOCUMENT_HARDCOPY.size()-1).endsWith("\n"))
                 DOCUMENT_HARDCOPY.set(DOCUMENT_HARDCOPY.size()-1,DOCUMENT_HARDCOPY.get(DOCUMENT_HARDCOPY.size()-1) + "\n");
@@ -501,8 +478,6 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
             currentCommandnum = prompts.size();
             processor.process(line, args, this);
             doc.write(prompt, defaultStyle, true);
-
-
         }
 	}
 	
@@ -534,14 +509,14 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
             doPop(e);
     }
     
-    private void doPop(MouseEvent e){
+    private void doPop(MouseEvent e) {
         PopUp menu = new PopUp();
         menu.show(e.getComponent(), e.getX(), e.getY());
     }
     
     private class PopUp extends JPopupMenu {
         JMenuItem copyButton;
-        public PopUp(){
+        public PopUp() {
             copyButton = new JMenuItem(new AbstractAction("copy") {
                 public void actionPerformed(ActionEvent e) {
                     if(!mostRecentSelectedText.equals("")) {
@@ -555,37 +530,29 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
         }
     }
 
-    private static String[] parseLine(String line)
-    {
+    private static String[] parseLine(String line) {
         List<String> args = new ArrayList<String>();
         StringBuilder current = new StringBuilder();
         char[] chars = line.toCharArray();
         boolean inQuotes = false;
-        for (char c :chars)
-        {
-            if (c == '"')
-            {
-                if (current.length() > 0)
-                {
+        for (char c :chars) {
+            if (c == '"') {
+                if (current.length() > 0) {
                     args.add(current.toString());
                     current.setLength(0);
                 }
                 inQuotes = !inQuotes;
             }
-            else if (inQuotes)
-            {
+            else if (inQuotes) {
                 current.append(c);
             }
-            else if (c == ' ')
-            {
-                if (current.length() > 0)
-                {
+            else if (c == ' ') {
+                if (current.length() > 0) {
                     args.add(current.toString());
                     current.setLength(0);
                 }
             }
-            else
-            {
+            else {
                 current.append(c);
             }
         }
@@ -595,13 +562,11 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
         return args.toArray(new String[0]);
     }
     
-	private static class NoOpInputProcessor implements InputProcessor
-	{
+	private static class NoOpInputProcessor implements InputProcessor {
 		public void process(String raw, String[] text, Console console) {}
 	}
 	
-	private static class NoOpCompletionSource implements CompletionSource
-	{
+	private static class NoOpCompletionSource implements CompletionSource {
 		public List<String> complete(String input)
 		{
 			return null;

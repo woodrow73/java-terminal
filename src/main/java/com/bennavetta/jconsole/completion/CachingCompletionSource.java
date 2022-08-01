@@ -19,18 +19,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class CachingCompletionSource implements CompletionSource
-{
+public abstract class CachingCompletionSource implements CompletionSource {
 	private Map<String, List<String>> completionCache = new HashMap<String, List<String>>();
 	
-	public List<String> complete(String text)
-	{
-		if(completionCache.containsKey(text))
-		{
+	public List<String> complete(String text) {
+		if(completionCache.containsKey(text)) {
 			return completionCache.get(text);
 		}
-		else
-		{
+		else {
 			List<String> results = doCompletion(text);
 			completionCache.put(text, results);
 			return results;

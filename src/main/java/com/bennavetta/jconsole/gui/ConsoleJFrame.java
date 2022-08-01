@@ -18,6 +18,7 @@ public class ConsoleJFrame extends JFrame {
 
     /**
      * Sets the UI's look and feel to a dark theme, and creates the console.
+     * setVisible(true) must be called to show the console.
      *
      * @param commandMap A map to store commands and triggers. Multiple strings can be used for the same command, but multiple
      *                   commands may not be referenced by the same string.

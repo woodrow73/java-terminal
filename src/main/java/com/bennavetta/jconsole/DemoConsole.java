@@ -30,15 +30,13 @@ import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DemoConsole
-{
+public class DemoConsole {
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
         // Set the look and feel to FlatDarculaLaf
         FlatLafWrapper.customizeLaf();
 
-        // A map to store commands and triggers. Multiple strings can be used for the same command, but not vice versa.
+        // A map to store commands and triggers
         Map<String, InputProcessor> commands = new HashMap<>();
         commands.put("castle", new Castle());
         commands.put("cls", new ClearScreen());
@@ -61,5 +59,4 @@ public class DemoConsole
         frame.setTitle("Demo Console");
         frame.setVisible(true);
     }
-
 }
