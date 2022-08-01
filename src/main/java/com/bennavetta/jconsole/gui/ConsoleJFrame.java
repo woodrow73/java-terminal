@@ -12,12 +12,15 @@ public class ConsoleJFrame extends JFrame {
 
     private final Console console;
 
-    public static final Dimension defaultJFrameSize = new Dimension(670, 435);
+    /** Whether to enable ANSI colors using ANSI escape sequences. Default is true */
+    private boolean enableAnsi = true;
 
-    private static final String ICON_IMAGE_FILE = "/icon.png";  // Resource path to the console's icon
+    public static final Dimension defaultJFrameSize = new Dimension(670, 435);
 
     /**
      * Sets the UI's look and feel to a dark theme, and creates the console.
+     * Sets the JFrame's size (670, 435), location (30, 30) & close operation (EXIT_ON_CLOSE) - all of which can be overwritten.
+     *
      * setVisible(true) must be called to show the console.
      *
      * @param commandMap A map to store commands and triggers. Multiple strings can be used for the same command, but multiple
@@ -27,15 +30,12 @@ public class ConsoleJFrame extends JFrame {
      * @param foregroundColor The text color of the console.
      * @param font The font of the console (for equally wide characters, use a monospaced font).
      * @param prompt The prompt to display before each command.
-     * @param enableAnsi Whether to enable ANSI colors using ANSI escape sequences.
      * @param resetColorAfterEachMsg Whether the text color in the console should be reset to
      *                               the param foregroundColor after each message.
-     * @param customizeJFrame Whether this constructor should set the JFrame's icon, size, location,
-     *                        and default close operation to EXIT_ON_CLOSE
      */
     public ConsoleJFrame(Map<String, InputProcessor> commandMap, InputProcessor processUnrecognizedCommand,
                         Color backgroundColor, Color foregroundColor, Font font, String prompt,
-                        boolean enableAnsi, boolean resetColorAfterEachMsg, boolean customizeJFrame) {
+                         boolean resetColorAfterEachMsg) {
 
         console = new Console(backgroundColor, foregroundColor, font, prompt, enableAnsi, resetColorAfterEachMsg);
 
@@ -56,21 +56,25 @@ public class ConsoleJFrame extends JFrame {
         this.add(console);
         this.addComponentListener(console);
 
-        if(customizeJFrame) {
-            try {this.setIconImage(new ImageIcon(ImageIO.read(getClass().getResource(ICON_IMAGE_FILE))).getImage());}
-            catch (Exception e) { e.printStackTrace(); }
-
-            this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            this.setSize(defaultJFrameSize);
-            console.setScreenHeight((int) this.getContentPane().getSize().getHeight());
-            this.setLocation(new Point(30, 30));
-        }
+        this.setSize(defaultJFrameSize);
+        console.setScreenHeight((int) this.getContentPane().getSize().getHeight());
+        this.setLocation(new Point(30, 30));
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     /** @return The console contained in this JFrame - a JScrollPane that contains a JTextPane (named textPane) */
     public Console getConsole() {
         return console;
     }
+
+    /** @param enableAnsi Whether to enable ANSI colors using ANSI escape sequences. Default is true */
+    public void setEnableAnsi(boolean enableAnsi) {
+        this.enableAnsi = enableAnsi;
+        console.enableANSI = enableAnsi;
+    }
+
+    /** @return Whether ANSI escape sequences are enabled */
+    public boolean getEnableAnsi() { return enableAnsi; }
 
     /** Writes text to the console with an added newline.
      *  Use write(String text, boolean newline) to write without a newline.

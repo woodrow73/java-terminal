@@ -26,7 +26,11 @@ import com.bennavetta.jconsole.gui.Console;
 import com.bennavetta.jconsole.gui.ConsoleJFrame;
 import com.bennavetta.jconsole.gui.FlatLafWrapper;
 
+import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,9 +58,18 @@ public class DemoConsole {
         };
 
         ConsoleJFrame frame = new ConsoleJFrame(commands, processUnrecognizedCommand, Color.black, Color.green,
-                new Font(Font.MONOSPACED, Font.BOLD, 14), "Demo Console> ", true, true, true);
+                new Font(Font.MONOSPACED, Font.BOLD, 14), "Demo Console> ", true);
 
+        setIcon(frame, DemoConsole.class.getResource("/icon.png"));
         frame.setTitle("Demo Console");
         frame.setVisible(true);
+    }
+
+    private static void setIcon(JFrame frame, URL url) {
+        try {
+            frame.setIconImage(new ImageIcon(ImageIO.read(url)).getImage());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
