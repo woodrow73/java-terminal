@@ -52,7 +52,7 @@ public class DemoConsole {
         // How to process unrecognized commands.
         InputProcessor processUnrecognizedCommand = new InputProcessor() {
             @Override
-            public void process(String raw, String[] rawSplit, Console console) {
+            public void process(Console console, String raw, String... args) {
                 console.write("Unrecognized command. Enter 'help' for a list of commands.");
             }
         };

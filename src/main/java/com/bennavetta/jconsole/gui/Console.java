@@ -476,7 +476,7 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
             String[] args = parseLine(line);
             prompts.add(line);
             currentCommandnum = prompts.size();
-            processor.process(line, args, this);
+            processor.process(this, line, args);
             doc.write(prompt, defaultStyle, true);
         }
 	}
@@ -563,7 +563,7 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
     }
     
 	private static class NoOpInputProcessor implements InputProcessor {
-		public void process(String raw, String[] text, Console console) {}
+		public void process(Console console, String raw, String... args) {}
 	}
 	
 	private static class NoOpCompletionSource implements CompletionSource {

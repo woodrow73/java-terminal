@@ -19,5 +19,11 @@ import com.bennavetta.jconsole.gui.Console;
 
 public interface InputProcessor
 {
-	public void process(String raw, String[] rawSplit, Console console);
+	/**
+	 * Processes the user's input.
+	 * @param console The console that the user is interacting with.
+	 * @param raw The user's inputted text.
+	 * @param args The user's inputted text split into arguments.
+	 */
+	public void process(Console console, String raw, String... args);
 }

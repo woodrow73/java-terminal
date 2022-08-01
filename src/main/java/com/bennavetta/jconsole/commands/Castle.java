@@ -5,7 +5,7 @@ import com.bennavetta.jconsole.gui.Console;
 
 public class Castle implements InputProcessor {
     @Override
-    public void process(String raw, String[] rawSplit, Console console) {
+    public void process(Console console, String raw, String... args) {
         console.write(ColorUtil.getCastle(), true);
     }
 }
