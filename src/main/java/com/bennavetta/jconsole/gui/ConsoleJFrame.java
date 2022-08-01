@@ -43,13 +43,13 @@ public class ConsoleJFrame extends JFrame {
         console.setCompletionSource(new DefaultCompletionSource(commandMap.keySet().stream().sorted().toArray(String[]::new)));
 
         console.setProcessor(new InputProcessor() { // This processor breaks a statement into args and passes them to the matching command
-            public void process(String raw, String[] args, Console console)
+            public void process(Console console, String raw, String... args)
             {
                 // process list of arguments
                 if (args.length > 0 && commandMap.containsKey(args[0].toLowerCase()))
-                    commandMap.get(args[0].toLowerCase()).process(raw, args, console);
+                    commandMap.get(args[0].toLowerCase()).process(console, raw, args);
                 else
-                    processUnrecognizedCommand.process(raw, args, console);
+                    processUnrecognizedCommand.process(console, raw, args);
             }
         });
 

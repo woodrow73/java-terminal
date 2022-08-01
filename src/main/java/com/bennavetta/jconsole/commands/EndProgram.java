@@ -4,7 +4,7 @@ import com.bennavetta.jconsole.gui.Console;
 
 public class EndProgram implements InputProcessor {
     @Override
-    public void process(String raw, String[] rawSplit, Console console) {
+    public void process(Console console, String raw, String... args) {
         System.exit(0);
     }
 }
