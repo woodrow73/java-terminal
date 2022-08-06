@@ -17,6 +17,7 @@ String name = console.nextLine();
 console.printf("%sHello%s %s!", Color.cyan, Colors.magicMint, name);
 ```
 Result:
+
 ![console](demo_console.PNG)
 
 *Dependency:*
