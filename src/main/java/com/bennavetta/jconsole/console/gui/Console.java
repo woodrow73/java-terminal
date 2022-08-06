@@ -12,13 +12,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * -----------------------------------------------------------------------
+ * Modified by: woodrow73 https://github.com/woodrow73
  */
-package com.bennavetta.jconsole.gui;
+package com.bennavetta.jconsole.console.gui;
 
 import com.bennavetta.jconsole.completion.CompletionSource;
 import com.bennavetta.jconsole.commands.InputProcessor;
-import com.bennavetta.jconsole.util.ColorUtil;
-import com.bennavetta.jconsole.util.Util;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -38,22 +40,23 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
     public boolean enableANSI;
 
     /** Whether the console's text color should be reset to Console.FOREGROUND after each message */
+    @Setter
     public boolean resetColorAfterEachMsg;
 
     /** Inherits from JTextPane, adds functionality for colored text */
-    public ColorPane textPane;
+    @Getter
+    private ColorPane textPane;
 
-    /** initial foreground color for the text */
-    public final Color FOREGROUND;
+    /** foreground color for the text */
+    @Getter
+    private Color foreground;
 	
 	private ConsoleDocument doc;		// Holder of all text on the window
 
-    private String prompt;			    // Structured as such: [connection][subprompt][prompt]
-    private String subPrompt = "";		// Subprompt: one character at the end of the prompt
-    public String connection = "Home>";	// Computer name, IP, or Domain name (for use with networking)
-    private String path = "C:\\";		// Current Directory
+    @Setter
+    private String prompt;			    // The prompt to display before each user input
 	
-	private final Font f;			// Keeps track of the current font for line counting.
+	private Font font;
 	
     private boolean wasInFocus = true;	// Used to focus the screen when typing/scrolling.
 	
@@ -64,28 +67,11 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
     private int currentCommandnum = 0;                                     // The current command number, as referenced in "prompts," that the user is
                                                                            //  accessing, based on arrow keys.
 	
-	private InputProcessor processor = new NoOpInputProcessor();		   // Processor of input, as name implies.
+	private InputProcessor[] processors = { InputProcessor.NO_OP };		   // Processors of input, as name implies.
 	
 	private CompletionSource completionSource = new NoOpCompletionSource();
 	
 	private MutableAttributeSet defaultStyle;
-
-
-
-    /**
-     * Sets the maximum number of lines that can fit on a window of the specified height.
-     * Note that this is the height of the text area, not the entire window. (do not send
-     * the raw window height, subtract the borders.)
-     *
-     * @author Joey Patel
-     * @author pateljo@northvilleschools.net (valid until 06/18)
-     * @param  heightInPixels   The height of the window, in pixels
-     */
-    public void setScreenHeight(int heightInPixels) { //in pixels
-        FontMetrics fm = textPane.getFontMetrics(f);
-        int height = fm.getMaxDescent(); //haha, getMaxDecent works too, but was quickly depricated!
-        height += fm.getMaxAscent();
-    }
     
     /**
      * Class used internally, no need to understand it.
@@ -108,7 +94,7 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
      * @param  distance the number of lines to scroll
      */
     public void scroll(int distance) {
-        getViewport().setViewPosition(new Point(0, getViewport().getViewPosition().y + distance * f.getSize()));
+        getViewport().setViewPosition(new Point(0, getViewport().getViewPosition().y + distance * font.getSize()));
     }
 
 	public CompletionSource getCompletionSource() {
@@ -118,60 +104,13 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
 	public void setCompletionSource(CompletionSource completionSource) {
 		this.completionSource = completionSource;
 	}
-
-	
-    /**
-     * Sets the console's prompt, overwriting the connection, path, and sub-prompt.
-     *
-     * @param  prompt to become the new prompt
-     */
-    public void setPrompt(String prompt) {
-        this.prompt = prompt;
-    }
-
-    /**
-     * Sets the one-character subprompt of the console's prompting system, then updates the
-     * entire prompt.
-     *
-     * @author Joey Patel
-     * @author pateljo@northvilleschools.net (valid until 06/18)
-     * @param  subPrompt to become the new sub-prompt
-     */
-    public void setSubPrompt(String subPrompt) {
-        this.subPrompt = subPrompt;
-        this.prompt = this.connection + this.path + this.subPrompt;
-    }
     
-    /**
-     * Sets the directory filepath of the console's prompting system, then updates the
-     * entire prompt.
-     *
-     * @author Joey Patel
-     * @author pateljo@northvilleschools.net (valid until 06/18)
-     * @param  path to become the new path
-     */
-    public void setPath(String path) {
-        this.path = path;
-        this.prompt = this.connection + this.path + this.subPrompt;
-    }
-    
-    /**
-     * Returns the current path.
-     *
-     * @author Joey Patel
-     * @author pateljo@northvilleschools.net (valid until 06/18)
-     * @returns the console's current filepath.
-     */
-    public String getPath() {
-        return path;
-    }
-    
-	public InputProcessor getProcessor() {
-		return processor;
+	public InputProcessor[] getProcessors() {
+		return processors;
 	}
 
-	public void setProcessor(InputProcessor processor) {
-		this.processor = processor;
+	public void setProcessors(InputProcessor... processors) {
+		this.processors = processors;
 	}
 
     /**
@@ -190,7 +129,7 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
         textPane = new ColorPane(this, foreground);
         this.enableANSI = enableANSI;
         this.resetColorAfterEachMsg = resetColorAfterEachMsg;
-        this.FOREGROUND = foreground;
+        this.foreground = foreground;
 
         setBorder(BorderFactory.createEmptyBorder());
 
@@ -208,19 +147,14 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
         textPane.setCaretColor(foreground);
         textPane.addCaretListener(doc);
         doc.setCaret(textPane.getCaret());
-        
-        f = font;
+
+        setConsoleFont(font);
         MutableAttributeSet attrs = textPane.getInputAttributes();
-        StyleConstants.setFontFamily(attrs, font.getFamily());
-        StyleConstants.setFontSize(attrs, font.getSize());
-        StyleConstants.setItalic(attrs, (font.getStyle() & Font.ITALIC) != 0);
-        StyleConstants.setBold(attrs, (font.getStyle() & Font.BOLD) != 0);
+
         StyleConstants.setForeground(attrs, foreground);
         textPane.getStyledDocument().setCharacterAttributes(0, doc.getLength() + 1, attrs, false);
         defaultStyle = attrs;
-        
-        
-        //this.prompt = this.connection + this.path + prompt;
+
         this.prompt = prompt;
         doc.write(this.prompt, defaultStyle, true);
         
@@ -228,6 +162,22 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
         textPane.addMouseWheelListener(this);
         textPane.addMouseListener(this);
 	}
+
+    public void setConsoleFont(Font font) { // if the method name is the same as super.setFont(), it will override the superclass's method causing a NPE.
+        this.font = font;
+        MutableAttributeSet attrs = textPane.getInputAttributes();
+        StyleConstants.setFontFamily(attrs, font.getFamily());
+        StyleConstants.setFontSize(attrs, font.getSize());
+        StyleConstants.setItalic(attrs, (font.getStyle() & Font.ITALIC) != 0);
+        StyleConstants.setBold(attrs, (font.getStyle() & Font.BOLD) != 0);
+    }
+
+    public void setConsoleForeground(Color foreground) { // if the method name is the same as super.setForeground(), it will override the superclass's method causing a NPE.
+        this.foreground = foreground;
+        textPane.setColorCurrent(foreground);
+        textPane.setCaretColor(foreground);
+        StyleConstants.setForeground(textPane.getInputAttributes(), foreground);
+    }
 	
     /**
      * "Clears" the terminal window...
@@ -246,97 +196,45 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
         currentPosition = 0;
     }
 
-    /** Writes text to the console with an added newline.
-     *  Use write(String text, boolean newline) to write without a newline.
+    /** Prints text to the console.
      *
-     * @param text to write
+     * @param text to print
      */
-	public void write(String text)
+	public void print(String text)
 	{
-		doc.write(text + "\n", defaultStyle, true);
+		doc.write(text, defaultStyle, true);
 	}
 
-    /** Writes text to the console.
+    /** Prints text to the console with a newline at the end.
      *
-     * @param text to write
-     * @param newline whether to add a newline
+     * @param text to print
      */
-    public void write(String text, boolean newline)
+    public void println(String text)
     {
-        doc.write(text + (newline ? "\n" : ""), defaultStyle, true);
+        doc.write(text + "\n", defaultStyle, true);
     }
 
-    /** Writes text to the console in color with an added newline; ignores ANSI.
-     *  Use write(String text, Color color, boolean newline) to write without a newline.
+    /** Prints text to the console in color - ignores ANSI.
      *
-     * @param text to write
+     * @param text to print
      * @param color what color to make the text
      */
-    public void write(String text, Color color)
+    public void print(String text, Color color)
     {
+        doc.write(text, defaultStyle, color, true);
+    }
+
+    /** Prints text to the console in color with a newline at the end - ignores ANSI.
+     *
+     * @param text to print
+     * @param color what color to make the text
+     */
+    public void println(String text, Color color) {
         doc.write(text + "\n", defaultStyle, color, true);
     }
 
-    /** Writes text to the console ignoring ANSI.
-     *
-     * @param text to write
-     * @param color what color to make the text
-     * @param newline whether to add a newline
-     */
-    public void write(String text, Color color, boolean newline) {
-        doc.write(text + (newline ? "\n" : ""), defaultStyle, color, true);
-    }
-
-    /** Writes text with each word given a color of the rainbow, with each character being a slightly different shade.
-     *
-     * @param text to write
-     * @param newline whether to add a newline
-     */
-    public void writeRainbowWords(String text, boolean newline) {
-        for(int i = 0, wordCount = 0; i < text.length(); i++) {
-            if(text.charAt(i) == ' ') {
-                int nextNonSpace = i + Util.indexOfRegex("\\S", text.substring(i));
-                if(nextNonSpace == -1) {
-                    doc.write(text.substring(i), defaultStyle, true);
-                    break;
-                }
-                else {
-                    doc.write(text.substring(i, nextNonSpace), defaultStyle, true);
-                    wordCount += i == 0 ? 0 : 1;
-                    i = nextNonSpace - 1;
-                    continue;
-                }
-            }
-            else {
-                doc.write(text.substring(i, i + 1), defaultStyle,
-                        ColorUtil.getCloseColor(ColorUtil.rainbow[wordCount % ColorUtil.rainbow.length], .21), true);
-            }
-        }
-
-        if(newline)
-            doc.write("\n", defaultStyle, true);
-    }
-
-    /** Writes text with each character given a color of the rainbow
-     *
-     * @param text to write
-     * @param newline whether to add a newline
-     */
-    public void writeRainbowCharacters(String text, boolean newline) {
-        for(int i = 0, nonSpaceCount = 0; i < text.length(); i++) {
-            if(text.charAt(i) != ' ') {
-                doc.write(text.substring(i, i + 1), defaultStyle, ColorUtil.getCloseColor(
-                        ColorUtil.almostRainbow[nonSpaceCount % ColorUtil.almostRainbow.length], .21), true);
-                nonSpaceCount++;
-            }
-            else {
-                doc.write(text.substring(i, i + 1), defaultStyle, true);
-            }
-        }
-
-        if(newline)
-            doc.write("\n", defaultStyle, true);
-    }
+    /** Prints a newline to the console. */
+    public void println() { println(""); }
 	
 	public void remove(int offset, int length) {
 		try {
@@ -464,6 +362,17 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
             //finally, write in the new command.
             doc.write(prompts.get(currentCommandnum), defaultStyle, false);
         }
+
+        // hacky fix for a bug where the foreground color of user's input changes to the prompt color
+        // when backspace is pressed while the caret is immediately after the prompt.
+        if(e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+            new Thread(() -> {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ex) { throw new RuntimeException(ex); }
+                SwingUtilities.invokeLater(() -> setConsoleForeground(foreground) );
+            }).start();
+        }
 	}
 
 	public void keyReleased(KeyEvent e) {
@@ -476,7 +385,10 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
             String[] args = parseLine(line);
             prompts.add(line);
             currentCommandnum = prompts.size();
-            processor.process(this, line, args);
+
+            for(InputProcessor processor : processors)
+                processor.process(this, line, args);
+
             doc.write(prompt, defaultStyle, true);
         }
 	}
@@ -488,9 +400,7 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
     public void componentHidden(ComponentEvent e) {}
     public void componentShown(ComponentEvent e) {}
     public void componentMoved(ComponentEvent e) {}
-    public void componentResized(ComponentEvent evt) {
-        this.setScreenHeight((int)(((JFrame)evt.getSource()).getContentPane().getSize().getHeight()));
-    }
+    public void componentResized(ComponentEvent evt) {}
     
     public void mouseExited(MouseEvent e) {}
     public void mouseEntered(MouseEvent e) {}
@@ -561,10 +471,6 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
 
         return args.toArray(new String[0]);
     }
-    
-	private static class NoOpInputProcessor implements InputProcessor {
-		public void process(Console console, String raw, String... args) {}
-	}
 	
 	private static class NoOpCompletionSource implements CompletionSource {
 		public List<String> complete(String input)

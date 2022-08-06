@@ -12,8 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * -----------------------------------------------------------------------
+ * Modified by: woodrow73 https://github.com/woodrow73
  */
-package com.bennavetta.jconsole.gui;
+package com.bennavetta.jconsole.console.gui;
 
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
@@ -46,7 +48,7 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
 			if(console.enableANSI) {
 				textPane.appendANSI(text, attrs);
 				if(console.resetColorAfterEachMsg) {
-					StyleConstants.setForeground(attrs, console.FOREGROUND);
+					StyleConstants.setForeground(attrs, console.getForeground());
 				}
 			}
 			else {
@@ -68,8 +70,26 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
 
 	public void write(String text, MutableAttributeSet attrs, Color color, boolean updateLimit) {
 		try {
+			textPane.setColorCurrent(color);
 			StyleConstants.setForeground(attrs, color);
-			insertString(getLength(), text, attrs);
+
+			if(text.contains("\u001B")) {
+				String nonAnsiText = text.substring(0, text.indexOf("\u001B"));
+				insertString(getLength(), nonAnsiText, attrs);
+
+				if(console.enableANSI) {
+					textPane.appendANSI(text, attrs);
+				}
+				else {
+					insertString(getLength(), text.substring(nonAnsiText.length()), attrs);
+					textPane.setCaretColor(color);
+				}
+			}
+			else {
+				insertString(getLength(), text, attrs);
+				textPane.setCaretColor(color);
+			}
+
 			if(updateLimit) {
 				limit = getLength();
 				caret.setDot(limit);
@@ -79,7 +99,9 @@ public class ConsoleDocument extends DefaultStyledDocument implements CaretListe
 			}
 
 			if(console.resetColorAfterEachMsg) {
-				StyleConstants.setForeground(attrs, console.FOREGROUND);
+				textPane.setColorCurrent(console.getForeground());
+				textPane.setCaretColor(console.getForeground());
+				StyleConstants.setForeground(attrs, console.getForeground());
 			}
 		}
 		catch(Exception e) {

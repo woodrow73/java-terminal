@@ -1,8 +1,11 @@
 package com.bennavetta.jconsole.util;
 
 import java.awt.*;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ColorUtil {
 
@@ -24,12 +27,16 @@ public class ColorUtil {
     public static final Color B_White   = Color.getHSBColor( 0.000f, 0.000f, 1.000f );
     private static final Color cReset    = Color.getHSBColor( 0.000f, 0.000f, 1.000f );
 
+    /** When used in any Tui.print method, this will reset the color to the default color; otherwise it'll be white. */
+    public static final String resetANSI = "\u001B[0m";
+
     public static Color[] rainbow = { Color.red, Color.orange, Color.yellow, Color.green, Color.blue, new Color(75, 0, 130),
             new Color(148, 0, 211) };
 
     public static Color[] almostRainbow = { Color.red, B_Red, Color.yellow, Color.green, Color.cyan,
             new Color(148, 0, 211), Color.magenta };
 
+    /** Map of all supported ANSI color codes to their corresponding colors */
     public static Map<String, Color> ansiColorMap = new LinkedHashMap<>() {{
         put("\u001B[30m", D_Black);
         put("\u001B[31m", D_Red);
@@ -58,11 +65,52 @@ public class ColorUtil {
         put("\u001B[0m", cReset);
     }};
 
-    public static Color getANSIColor(String ANSIColor) {
+    /** Gets all supported ANSI color codes
+     *
+     * @param showUnicodeEscapeSequence if true, each unicode character will be replaced with a human-readable unicode escape sequence
+     * @param delimiter the delimiter to use between each color code
+     * @return all supported ANSI color codes
+     */
+    public static String getSupportedAnsiColors(boolean showUnicodeEscapeSequence, String delimiter) {
+        List<String> ansiColors = ansiColorMap.keySet().stream()
+                .map(ansi -> showUnicodeEscapeSequence ? ansi.replace("\u001B", "\\u001B") : ansi)
+                .collect(Collectors.toList());
+
+        return String.join(delimiter, ansiColors);
+    }
+
+    /**
+     * Gets the color corresponding to the given ANSI color code
+     * @param ANSIColor the ANSI color code
+     * @return the color corresponding to the given ANSI color code
+     * @throws IllegalArgumentException if the given ANSI color code is not supported
+     */
+    public static Color ansiToColor(String ANSIColor) {
         if (ansiColorMap.containsKey(ANSIColor))
             return ansiColorMap.get(ANSIColor);
         else
-            return B_White;
+            throw new IllegalArgumentException("Unsupported ANSI color: " + ANSIColor.replace("\u001B", "\\u001B") +
+                    "\nSupported ANSI colors: " + getSupportedAnsiColors(true, "\n"));
+    }
+
+    /**
+     * Performs color distance calculations to find the closest valid ANSI color to the given color.
+     *
+     * @param color The color to convert to an ANSI escape sequence.
+     * @return The ANSI escape sequence of the closest ANSI color to the given color.
+     */
+    public static String colorToANSI(Color color) {
+        Color closestColor = D_Blue;
+        String closestColorANSI = "\u001B[34m";
+
+        for(Map.Entry<String, Color> entry : ansiColorMap.entrySet()) {
+            if(colorDistance(color, entry.getValue()) < colorDistance(color, closestColor)) {
+                closestColor = entry.getValue();
+                closestColorANSI = entry.getKey();
+            }
+        }
+
+        return closestColorANSI;
     }
 
     /**
@@ -105,6 +153,55 @@ public class ColorUtil {
                 new int[]{ c2.getRed(), c2.getGreen(), c2.getBlue()}, false);
     }
 
+    /**
+     * Converts a Color object's RGB values to a Hexadecimal String in the format '0xRRGGBB'
+     * @param c The Color object to convert.
+     * @return A Hexadecimal String representation of the Color object in the format '0xRRGGBB'
+     */
+    public static String hex(Color c) {
+        return String.format("0x%02x%02x%02x", c.getRed(), c.getGreen(), c.getBlue());
+    }
+
+    /**
+     * Converts RGB values to a Hexadecimal String in the format '0xRRGGBB'
+     * @param red The red value of the Color object 0-255.
+     * @param green The green value of the Color object 0-255.
+     * @param blue The blue value of the Color object 0-255.
+     * @return A Hexadecimal String representation of RGB values in the format '0xRRGGBB'
+     */
+    public static String hex(int red, int green, int blue) {
+        return String.format("0x%02x%02x%02x", red, green, blue);
+    }
+
+
+    /** Clones an RGB or RGBA Color object */
+    public static Color clone(Color c) {
+        // Color objects have an alpha value of 255 by default
+        return new Color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha());
+    }
+
+    /**
+     * Brighten or darken a color using a multiplier against the RGB channels.<br><br>
+     * The multiplier will be constrained to ensure that the RGB channels keep the same ratio.
+     *
+     * @param color The color to adjust brightness for.
+     * @param multiplier The multiplier to use - it will be constrained to ensure that the RGB channels keep the same ratio.
+     * @return The same color with adjusted brightness.
+     */
+    public static Color adjustBrightness(Color color, double multiplier) {
+        int maxColorChannel = Math.max(color.getRed(), Math.max(color.getGreen(), color.getBlue())),
+                minColorChannel = Math.min(color.getRed(), Math.min(color.getGreen(), color.getBlue()));
+        double maxMultiplier = 255.0 / maxColorChannel,
+                minMultiplier = 1.0 / minColorChannel;
+
+        multiplier = Math.min(maxMultiplier, Math.max(multiplier, minMultiplier));
+
+        int r = (int) Math.round(color.getRed() * multiplier);
+        int g = (int) Math.round(color.getGreen() * multiplier);
+        int b = (int) Math.round(color.getBlue() * multiplier);
+
+        return new Color(r, g, b);
+    }
 
     /**
      * Gets perceived brightness of a color
@@ -180,7 +277,7 @@ public class ColorUtil {
     }
 
     /**
-     * Creates a castle assembled from ASCII; its flags dyed red with E-ANSI
+     * Creates a castle assembled from ASCII; its flags dyed red with your En.. ANSI
      * @return your castle
      */
     public static String getCastle() {
@@ -221,6 +318,67 @@ public class ColorUtil {
         }
 
         return formatted;
+    }
+
+    /**
+     * Replaces all ANSI codes inside a string with their respective hex color codes.<br>
+     * Supported ANSI colors can be printed from getSupportedAnsiColors()<br>
+     * @param s string to replace ANSI codes in
+     * @return string with ANSI codes replaced with hex color codes
+     */
+    public static String replaceAllAnsiWithHex(String s) {
+        String regex = "\u001B\\[.{1,4}m";
+        Matcher matcher = Pattern.compile(regex).matcher(s);
+
+        StringBuilder sb = new StringBuilder();
+        int substringBetweenAnsiStartIndex = 0;
+        while(matcher.find()) {
+            sb.append(s.substring(substringBetweenAnsiStartIndex, matcher.start()));
+            substringBetweenAnsiStartIndex = matcher.end();
+
+            String ansi = matcher.group();
+            if(ColorUtil.ansiColorMap.containsKey(ansi))
+                sb.append(hex(ColorUtil.ansiToColor(ansi)));
+            else
+                System.err.println("ANSI escape sequence not supported: " + ansi.replace("\u001B", "\\u001B") +
+                        "\nRemoving it from the string.\nSupported ANSI colors:\n" + getSupportedAnsiColors(true, "\n"));
+        }
+
+        if(s.length() > substringBetweenAnsiStartIndex)
+            sb.append(s.substring(substringBetweenAnsiStartIndex));
+
+        return sb.toString();
+    }
+
+    /**
+     * Replaces all ANSI codes inside a string with their respective hex color codes.<br>
+     * Supported ANSI colors can be printed from getSupportedAnsiColors()<br>
+     * @param s string to replace ANSI codes in
+     * @param resetColor The color that \u001B[0m should be replaced with (default white).
+     * @return string with ANSI codes replaced with hex color codes
+     */
+    public static String replaceAllAnsiWithHex(String s, Color resetColor) {
+        String regex = "\u001B\\[.{1,4}m";
+        Matcher matcher = Pattern.compile(regex).matcher(s);
+
+        StringBuilder sb = new StringBuilder();
+        int substringBetweenAnsiStartIndex = 0;
+        while(matcher.find()) {
+            sb.append(s.substring(substringBetweenAnsiStartIndex, matcher.start()));
+            substringBetweenAnsiStartIndex = matcher.end();
+
+            String ansi = matcher.group();
+            if(ColorUtil.ansiColorMap.containsKey(ansi))
+                sb.append(ansi.equals(resetANSI) ? hex(resetColor) : hex(ColorUtil.ansiToColor(ansi)));
+            else
+                System.err.println("ANSI escape sequence not supported: " + ansi.replace("\u001B", "\\u001B") +
+                        "\nRemoving it from the string.\nSupported ANSI colors:\n" + getSupportedAnsiColors(true, "\n"));
+        }
+
+        if(s.length() > substringBetweenAnsiStartIndex)
+            sb.append(s.substring(substringBetweenAnsiStartIndex));
+
+        return sb.toString();
     }
 
 }

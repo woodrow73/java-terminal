@@ -1,6 +1,6 @@
 package com.bennavetta.jconsole.commands;
 
-import com.bennavetta.jconsole.gui.Console;
+import com.bennavetta.jconsole.console.gui.Console;
 
 public class EndProgram implements InputProcessor {
     @Override

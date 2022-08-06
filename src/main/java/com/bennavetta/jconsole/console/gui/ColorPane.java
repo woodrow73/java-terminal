@@ -1,27 +1,30 @@
-package com.bennavetta.jconsole.gui;
+package com.bennavetta.jconsole.console.gui;
 
-import com.bennavetta.jconsole.gui.Console;
 import com.bennavetta.jconsole.util.ColorUtil;
 
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
 
+/**
+ * Prints text to a JTextPane in color - either using ANSI escape sequences or a Color object.<br><br>
+ * Mostly written by <a href="https://stackoverflow.com/a/6899478/7254424">tim_yates</a>
+ */
 public class ColorPane extends JTextPane {
 
     private Console console;
 
-    private static Color colorCurrent;
+    private Color colorCurrent;
     private String remaining = "";
 
     public ColorPane(Console console, Color foreground) {
         this.console = console;
-        this.colorCurrent = foreground;
+        this.colorCurrent = new Color(foreground.getRGB());
     }
 
     public void append(Color c, String s, MutableAttributeSet attrs) {
+        setColorCurrent(c);
+        setCaretColor(c);
         StyleConstants.setForeground(attrs, c);
         int len = getDocument().getLength(); // same value as getText().length();
         setCaretPosition(len);  // place caret at the end (with no selection)
@@ -30,7 +33,9 @@ public class ColorPane extends JTextPane {
     }
 
     public void appendANSI(String s, MutableAttributeSet attrs) { // convert ANSI color codes first
-        colorCurrent = console.resetColorAfterEachMsg ? console.FOREGROUND : colorCurrent;
+        if(console.resetColorAfterEachMsg)
+            setColorCurrent(console.getForeground());
+
         int aPos = 0;   // current char position in addString
         int aIndex = 0; // index of next Escape sequence
         int mIndex = 0; // index of "m" terminating Escape sequence
@@ -64,7 +69,7 @@ public class ColorPane extends JTextPane {
                 }
                 else {
                     tmpString = addString.substring(aPos,mIndex+1);
-                    colorCurrent = ColorUtil.getANSIColor(tmpString);
+                    colorCurrent = ColorUtil.ansiToColor(tmpString);
                 }
                 aPos = mIndex + 1;
                 // now we have the color, send text that is in that color (up to next escape)
@@ -85,6 +90,10 @@ public class ColorPane extends JTextPane {
 
             } // while there's text in the input buffer
         }
+    }
+
+    protected void setColorCurrent(Color c) {
+        colorCurrent = new Color(c.getRGB());
     }
 
 }

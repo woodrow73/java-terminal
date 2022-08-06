@@ -1,4 +1,4 @@
-package com.bennavetta.jconsole.gui;
+package com.bennavetta.jconsole.console.gui;
 
 import com.formdev.flatlaf.FlatDarculaLaf;
 import org.apache.commons.lang3.SystemUtils;
@@ -6,6 +6,7 @@ import org.apache.commons.lang3.SystemUtils;
 import javax.swing.*;
 import java.awt.*;
 
+/** Uses the flatlaf library to customize the look and feel of Swing components to FlatDarculaLaf. */
 public class FlatLafWrapper {
 
     /**
