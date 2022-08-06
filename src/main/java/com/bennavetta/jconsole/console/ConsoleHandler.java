@@ -125,8 +125,9 @@ class ConsoleHandler {
     }
 
     /**
-     * Add a background color transition to the queue of tasks inside interruptingBackgroundTransitions, the single thread executor.
-     * This method will immediately interrupt the backgroundTransitions queue
+     * Add a background color transition to the queue of tasks inside backgroundTransitions, the single thread executor.
+     * The background transitions will be stopped if a Tui object that's currently selected for this console calls
+     * setBackgroundColor, or if the Tui object currently selected for this console is switched.
      * @param newColor The new background color.
      */
     protected void addBackgroundTransitionToQueue(Color newColor, int durationMS) {
