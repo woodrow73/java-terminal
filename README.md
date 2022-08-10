@@ -4,11 +4,10 @@ Basic usage:
 ```java
 FlatLafWrapper.customizeLaf(); // apply a dark theme to the frame using the flatlaf library
 
-JFrame frame = new JFrame("Demo");
-boolean setFrameLikeWindows10CMD = true;
-Tui console = new Tui.TuiBuilder(frame, setFrameLikeWindows10CMD).build();
+String frameTitle = "Demo";
+boolean resetColorAfterMsg = true; // if the text's color should be reset after each message
 
-frame.setVisible(true);
+TuiFrame console = new TuiFrame.Builder(frameTitle, resetColorAfterMsg).build();
 
 console.println("What's your name?");
 // take input from the user
