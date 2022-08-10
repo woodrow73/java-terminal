@@ -15,7 +15,7 @@
  * -----------------------------------------------------------------------
  * Modified by: woodrow73 https://github.com/woodrow73
  */
-package com.bennavetta.jconsole.console.gui;
+package com.bennavetta.jconsole.tui.console;
 
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;

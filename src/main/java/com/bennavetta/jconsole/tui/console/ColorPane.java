@@ -1,4 +1,4 @@
-package com.bennavetta.jconsole.console.gui;
+package com.bennavetta.jconsole.tui.console;
 
 import com.bennavetta.jconsole.util.ColorUtil;
 

@@ -17,7 +17,7 @@
  */
 package com.bennavetta.jconsole.commands;
 
-import com.bennavetta.jconsole.console.gui.Console;
+import com.bennavetta.jconsole.tui.console.Console;
 
 public interface InputProcessor {
 

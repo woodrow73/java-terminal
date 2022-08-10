@@ -1,4 +1,4 @@
-package com.bennavetta.jconsole.console;
+package com.bennavetta.jconsole.tui;
 
 import com.bennavetta.jconsole.commands.InputProcessor;
 import com.bennavetta.jconsole.util.ColorUtil;
@@ -14,16 +14,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Uses the Builder Design Pattern with the inner class TuiBuilder.<br><br>
- * <p>
- * Given a JFrame, it'll construct a T-UI (text user interface) inside, handling both input and output -
- * multiple Tui objects can be created for a JFrame, though only one can be selected at a time.<br>
- * To select a Tui object, either call the applySettingsToFrame() method directly, or indirectly through
- * any of the <b>print</b> or <b>nextFoo</b> or <b>queueBackground</b> methods.
- * </p>
+ * Parent class to Tui and TuiFrame, initialized with a builder pattern using Tui.Builder or TuiFrame.Builder.
+ * This class should probably be named Tui, but the Builder pattern is less verbose with the subclass being named Tui.
+ *
  * @author woodrow73
  */
-public class Tui {
+class TuiParent {
 
     /** Thread safe map of ConsoleHandler.uniqueID to a list of all the user's input for a console on that JFrame. */
     public static Map<Integer, CopyOnWriteArrayList<String>> allUserInputLogs = Collections.synchronizedMap(new LinkedHashMap());
@@ -77,8 +73,8 @@ public class Tui {
     @Getter
     private final JFrame frame;
 
-    /** Settings for the JFrame passed into Tui.TuiBuilder to look like a Windows 10 CMD<br>
-     *  Can choose to apply them in Tui.TuiBuilder's constructor. */
+    /** Settings for the JFrame to look like a Windows 10 CMD<br>
+     *  Can choose to apply them in Tui.Builder's constructor. */
     public static class FrameSettings {
         /** The default frame size - same as the Windows 10 CMD window */
         public static final Dimension DEFAULT_SIZE = new Dimension(670, 435);
@@ -90,10 +86,9 @@ public class Tui {
         public static final int DEFAULT_CLOSE_OPERATION = JFrame.EXIT_ON_CLOSE;
     }
 
-    private static final Color DEFAULT_BACKGROUND_COLOR = Color.black, DEFAULT_FOREGROUND_COLOR = Color.green;
+    private static final Color DEFAULT_BACKGROUND_COLOR = Color.black, DEFAULT_FOREGROUND_COLOR = Color.white;
     private static final Font DEFAULT_FONT = new Font(Font.MONOSPACED, Font.BOLD, 14);
     private static final String DEFAULT_PROMPT = "";
-    private static final boolean DEFAULT_RESET_COLOR_AFTER_EACH_MSG = true;
 
     private final ConsoleHandler consoleHandler;
 
@@ -109,7 +104,7 @@ public class Tui {
     /** A regex to get '0xRRGGBB' hex strings that are not immediately followed by another hex string */
     private String hexRegex = "0x[0-9A-Fa-f]{6}";
 
-    private Tui(Tui.TuiBuilder builder) {
+    protected TuiParent(Tui.Builder builder) {
         this.processor = builder.processor.isPresent() ? builder.processor.get() : InputProcessor.NO_OP;
         this.commandMap = builder.commandMap.isPresent() ? builder.commandMap.get() : Map.of();
         this.processUnrecognizedCommand = builder.processUnrecognizedCommand.isPresent() ?
@@ -119,12 +114,13 @@ public class Tui {
                 DEFAULT_FOREGROUND_COLOR;
         this.font = builder.font.isPresent() ? builder.font.get() : DEFAULT_FONT;
         this.prompt = builder.prompt.isPresent() ? builder.prompt.get() : DEFAULT_PROMPT;
-        this.resetColorAfterEachMsg = builder.resetColorAfterEachMsg.isPresent() ?
-                new AtomicBoolean(builder.resetColorAfterEachMsg.get()) : new AtomicBoolean(DEFAULT_RESET_COLOR_AFTER_EACH_MSG);
+        this.resetColorAfterEachMsg = new AtomicBoolean(builder.resetColorAfterEachMsg);
         this.charPrintDelayMS = builder.charPrintDelayMS.isPresent() ? builder.charPrintDelayMS.get() : 0;
 
         this.frame = builder.frame;
-        if(builder.setFrameLikeWindows10CMD) {
+        boolean unregisteredFrame = !ConsoleHandler.instances.containsKey(frame);
+
+        if(builder.setFrameLikeWindows10CMD && unregisteredFrame) {
             frame.setSize(FrameSettings.DEFAULT_SIZE);
             frame.setLocation(FrameSettings.DEFAULT_LOCATION);
             frame.setDefaultCloseOperation(FrameSettings.DEFAULT_CLOSE_OPERATION);
@@ -132,12 +128,38 @@ public class Tui {
 
         // There is only one ConsoleHandler per JFrame, but there can be multiple Tui objects per ConsoleHandler/JFrame
         // Create a new ConsoleHandler instance if one doesn't already exist for this JFrame
-        if(!ConsoleHandler.instances.containsKey(frame))
+        if(unregisteredFrame)
             consoleHandler = new ConsoleHandler(this);
         else
             consoleHandler = ConsoleHandler.instances.get(frame);
 
         userInputLog = allUserInputLogs.get(consoleHandler.getUniqueID());
+    }
+
+    protected TuiParent(TuiFrame.Builder builder) {
+        this.processor = builder.processor.isPresent() ? builder.processor.get() : InputProcessor.NO_OP;
+        this.commandMap = builder.commandMap.isPresent() ? builder.commandMap.get() : Map.of();
+        this.processUnrecognizedCommand = builder.processUnrecognizedCommand.isPresent() ?
+                builder.processUnrecognizedCommand.get() : InputProcessor.NO_OP;
+        this.backgroundColor = builder.backgroundColor.isPresent() ? builder.backgroundColor.get() : DEFAULT_BACKGROUND_COLOR;
+        this.defaultForegroundColor = builder.defaultForegroundColor.isPresent() ? builder.defaultForegroundColor.get() :
+                DEFAULT_FOREGROUND_COLOR;
+        this.font = builder.font.isPresent() ? builder.font.get() : DEFAULT_FONT;
+        this.prompt = builder.prompt.isPresent() ? builder.prompt.get() : DEFAULT_PROMPT;
+        this.resetColorAfterEachMsg = new AtomicBoolean(builder.resetColorAfterEachMsg);
+        this.charPrintDelayMS = builder.charPrintDelayMS.isPresent() ? builder.charPrintDelayMS.get() : 0;
+
+        this.frame = new JFrame(builder.frameTitle);
+        frame.setSize(builder.frameSize.isPresent() ? builder.frameSize.get() : FrameSettings.DEFAULT_SIZE);
+        frame.setLocation(builder.frameLocation.isPresent() ? builder.frameLocation.get() : FrameSettings.DEFAULT_LOCATION);
+        frame.setDefaultCloseOperation(FrameSettings.DEFAULT_CLOSE_OPERATION);
+
+        // since it's a new JFrame, create a new ConsoleHandler instance
+        consoleHandler = new ConsoleHandler(this);
+
+        userInputLog = allUserInputLogs.get(consoleHandler.getUniqueID());
+
+        frame.setVisible(true);
     }
 
     /**
@@ -156,11 +178,11 @@ public class Tui {
     }
 
     /**
-     * Gets the current foreground color of the console. Not to be confused with the defaultForegroundColor of this
-     * Tui object.
+     * Gets the current displayed foreground color of the console. Not to be confused with the defaultForegroundColor of
+     * this Tui object.
      * @return
      */
-    public Color getForegroundColor() {
+    public Color getDisplayedForegroundColor() {
         return consoleHandler.getConsole().getTextPane().getForeground();
     }
 
@@ -235,7 +257,7 @@ public class Tui {
         }
     }
 
-    /** Applies the settings in this Tui to the associated TuiFrame.
+    /** Applies the settings in this Tui to the associated JFrame.
      *  This method gets called when any of the <b>print</b> methods or <b>nextFoo</b> methods are used. */
     public void applySettingsToFrame() {
         try {
@@ -581,123 +603,5 @@ public class Tui {
         int input = nextInt();
         setForegroundColor(defaultForegroundColor);
         return input;
-    }
-
-    /**
-     * Uses the Builder Design Pattern, creating an immutable Tui object when the build() method is called<br>
-     * <p>
-     * A preset of settings for a TuiFrame - multiple presets can be created for a TuiFrame.
-     *
-     * </p>
-     */
-
-    /** Uses the Builder Design Pattern, creating an immutable Tui object when the build() method is called. */
-    public static class TuiBuilder {
-
-        private Optional<Map<String, InputProcessor>> commandMap = Optional.empty();
-
-        private Optional<InputProcessor> processUnrecognizedCommand = Optional.empty(),
-                processor = Optional.empty();
-
-        private Optional<Color> backgroundColor = Optional.empty(),
-                defaultForegroundColor = Optional.empty();
-
-        private Optional<Font> font = Optional.empty();
-
-        private Optional<String> prompt = Optional.empty();
-
-        private Optional<Boolean> resetColorAfterEachMsg = Optional.empty();
-
-        private Optional<Integer> charPrintDelayMS = Optional.empty();
-
-        private final JFrame frame;
-
-        private final boolean setFrameLikeWindows10CMD;
-
-        /**
-         * Starts building a T-UI (text user interface) for the given JFrame, using the Builder Design Pattern.
-         * @param frame The JFrame to build a TUI (text user interface) for.
-         */
-        public TuiBuilder(JFrame frame) {
-            this.frame = frame;
-            this.setFrameLikeWindows10CMD = false;
-        }
-
-        /**
-         * Starts building a T-UI (text user interface) for the given JFrame, using the Builder Design Pattern.
-         * @param frame The JFrame to build a TUI (text user interface) for.
-         * @param setFrameLikeWindows10CMD Whether the JFrame's size and location should be set to match the Windows 10 CMD,
-         *                            with the default close operation set to JFrame.EXIT_ON_CLOSE<br><br>
-         *                            All values that would be set are inside Tui.FrameSettings
-         */
-        public TuiBuilder(JFrame frame, boolean setFrameLikeWindows10CMD) {
-            this.frame = frame;
-            this.setFrameLikeWindows10CMD = setFrameLikeWindows10CMD;
-        }
-
-        /** @param processor Processes all user input. */
-        public Tui.TuiBuilder processor(InputProcessor processor) {
-            this.processor = Optional.of(processor);
-            return this;
-        }
-
-        /** @param commandMap A map to store commands and triggers. */
-        public Tui.TuiBuilder commandMap(Map<String, InputProcessor> commandMap) {
-            this.commandMap = Optional.of(commandMap);
-            return this;
-        }
-
-        /** @param processUnrecognizedCommand How to process unrecognized commands. */
-        public Tui.TuiBuilder processUnrecognizedCommand(InputProcessor processUnrecognizedCommand) {
-            this.processUnrecognizedCommand = Optional.of(processUnrecognizedCommand);
-            return this;
-        }
-
-        /** @param backgroundColor The background color of the console. */
-        public Tui.TuiBuilder backgroundColor(Color backgroundColor) {
-            this.backgroundColor = Optional.of(backgroundColor);
-            return this;
-        }
-
-        /** @param defaultForegroundColor The default text color used with the Tui classes' print methods
-         *              (doesn't change the color of previously printed text).<br>Default is Color.green */
-        public Tui.TuiBuilder foregroundColor(Color defaultForegroundColor) {
-            this.defaultForegroundColor = Optional.of(defaultForegroundColor);
-            return this;
-        }
-
-        /** @param font The font of the console (for equally wide characters, use a monospaced font). */
-        public Tui.TuiBuilder font(Font font) {
-            this.font = Optional.of(font);
-            return this;
-        }
-
-        /** @param prompt The prompt to display before each command. */
-        public Tui.TuiBuilder prompt(String prompt) {
-            this.prompt = Optional.of(prompt);
-            return this;
-        }
-
-        /** @param resetColorAfterEachMsg (default true) Whether the text color in the console should be reset to
-         *      the defaultForegroundColor after each message. */
-        public Tui.TuiBuilder resetColorAfterEachMsg(boolean resetColorAfterEachMsg) {
-            this.resetColorAfterEachMsg = Optional.of(resetColorAfterEachMsg);
-            return this;
-        }
-
-        /** @param charPrintDelayMS The delay after each character is printed in milliseconds. */
-        public Tui.TuiBuilder charPrintDelayMS(int charPrintDelayMS) {
-            this.charPrintDelayMS = Optional.of(charPrintDelayMS);
-            return this;
-        }
-
-        /**
-         * Builds an immutable Tui object.
-         * @return The Tui object.
-         */
-        public Tui build() {
-            return new Tui(this);
-        }
-
     }
 }

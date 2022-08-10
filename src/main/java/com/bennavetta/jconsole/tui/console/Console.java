@@ -15,7 +15,7 @@
  * -----------------------------------------------------------------------
  * Modified by: woodrow73 https://github.com/woodrow73
  */
-package com.bennavetta.jconsole.console.gui;
+package com.bennavetta.jconsole.tui.console;
 
 import com.bennavetta.jconsole.completion.CompletionSource;
 import com.bennavetta.jconsole.commands.InputProcessor;
@@ -369,7 +369,7 @@ public class Console extends JScrollPane implements KeyListener, MouseWheelListe
             new Thread(() -> {
                 try {
                     Thread.sleep(10);
-                } catch (InterruptedException ex) { throw new RuntimeException(ex); }
+                } catch (InterruptedException ex) { ex.printStackTrace(); }
                 SwingUtilities.invokeLater(() -> setConsoleForeground(foreground) );
             }).start();
         }

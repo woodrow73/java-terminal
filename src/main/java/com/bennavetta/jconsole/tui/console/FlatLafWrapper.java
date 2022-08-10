@@ -1,4 +1,4 @@
-package com.bennavetta.jconsole.console.gui;
+package com.bennavetta.jconsole.tui.console;
 
 import com.formdev.flatlaf.FlatDarculaLaf;
 import org.apache.commons.lang3.SystemUtils;

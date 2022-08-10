@@ -1,8 +1,8 @@
-package com.bennavetta.jconsole.console;
+package com.bennavetta.jconsole.tui;
 
 import com.bennavetta.jconsole.completion.DefaultCompletionSource;
 import com.bennavetta.jconsole.commands.InputProcessor;
-import com.bennavetta.jconsole.console.gui.Console;
+import com.bennavetta.jconsole.tui.console.Console;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Handles creation and handling of Console objects.<br>
  * One instance per console; There is only one ConsoleHandler per JFrame, but there can be multiple Tui objects per ConsoleHandler/JFrame<br>
  * Package-private
- * @author woodrow73
+ * @author <a href="">woodrow73</a>
  */
 class ConsoleHandler {
 
@@ -37,7 +37,7 @@ class ConsoleHandler {
 
     /** The settings currently applied to this console */
     @Getter
-    public Tui currentSettings;
+    public TuiParent currentSettings;
 
     /** Unique identifier for this instance of ConsoleHandler - the index inside ConsoleHandler.instances */
     @Getter
@@ -56,7 +56,7 @@ class ConsoleHandler {
      *
      * @throws IllegalStateException if a ConsoleHandler instance already exists for the given JFrame
      */
-    public ConsoleHandler(Tui consoleSettings) throws IllegalStateException {
+    public ConsoleHandler(TuiParent consoleSettings) throws IllegalStateException {
         JFrame frame = consoleSettings.getFrame();
         if(instances.containsKey(frame))
             throw new IllegalStateException("ConsoleHandler already exists for this JFrame");
@@ -80,7 +80,7 @@ class ConsoleHandler {
      * @param consoleSettings The settings to apply.
      * @param setBackground Whether to set the background color of the console.
      */
-    public void setConsoleSettings(Tui consoleSettings, boolean setBackground) {
+    public void setConsoleSettings(TuiParent consoleSettings, boolean setBackground) {
         this.currentSettings = consoleSettings;
         Map<String, InputProcessor> commandMap = consoleSettings.getCommandMap();
 
